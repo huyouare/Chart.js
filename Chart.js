@@ -1410,7 +1410,7 @@ window.Chart = function (context, options) {
                         ctx.textAlign = 'center';
                         ctx.font = config.scaleFontStyle + ' ' + config.scaleFontSize + 'px ' + config.scaleFontFamily;
                         ctx.fillStyle = config.scaleValueFontColor;
-                        ctx.fillText(data.datasets[i].data[j], barOffset + config.barValueSpacing, xAxisPosY - animPc * calculateOffset(data.datasets[i].data[j], calculatedScale, scaleHop) + (config.barStrokeWidth / 2) - config.scaleValuePaddingY);
+                        ctx.fillText(data.datasets[i].data[j], barOffset + config.barValueSpacing + config.scaleValuePaddingX, xAxisPosY - animPc * calculateOffset(data.datasets[i].data[j], calculatedScale, scaleHop) + (config.barStrokeWidth / 2) - config.scaleValuePaddingY);
                         ctx.restore();
                     }
 
