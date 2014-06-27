@@ -1371,6 +1371,11 @@ window.Chart = function (context, options) {
                 yOffset[j] = 0;
             }
             var barHeight = 0;
+            var heightSum = new Array(data.datasets[0].data.length);
+            for (var i = 0; i < heightSum.length; i++) {
+                heightSum[i] = 0;
+            }
+
             for (var i = 0; i < data.datasets.length; i++) {
 
                 for (var j = 0; j < data.datasets[i].data.length; j++) {
@@ -1410,7 +1415,9 @@ window.Chart = function (context, options) {
                         ctx.textAlign = 'center';
                         ctx.font = config.scaleFontStyle + ' ' + config.scaleFontSize + 'px ' + config.scaleFontFamily;
                         ctx.fillStyle = config.scaleValueFontColor;
-                        ctx.fillText(data.datasets[i].data[j], barOffset + config.barValueSpacing + config.scaleValuePaddingX, xAxisPosY - animPc * calculateOffset(data.datasets[i].data[j], calculatedScale, scaleHop) + (config.barStrokeWidth / 2) - config.scaleValuePaddingY);
+                        ctx.fillText(data.datasets[i].data[j], barOffset + config.barValueSpacing + config.scaleValuePaddingX, xAxisPosY - animPc * (calculateOffset(data.datasets[i].data[j], calculatedScale, scaleHop) + heightSum[j]) + (config.barStrokeWidth / 2) - config.scaleValuePaddingY);
+                        heightSum[j] += calculateOffset(data.datasets[i].data[j], calculatedScale, scaleHop);
+                        
                         ctx.restore();
                     }
 
