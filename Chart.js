@@ -707,11 +707,10 @@ window.Chart = function (context, options) {
 
             return {
                 maxValue: upperValue,
-                minValue: lowerValue,
+                minValue: config.stacked ? 0 : lowerValue,
                 maxSteps: maxSteps,
                 minSteps: minSteps
             };
-
 
         }
     }
@@ -1366,11 +1365,20 @@ window.Chart = function (context, options) {
 
         function drawBars(animPc) {
             ctx.lineWidth = config.barStrokeWidth;
+            var barOffset = 0;
+            var yOffset = new Array();
+            for(j=0; j<data.labels.length; j++){
+                yOffset[j] = 0;
+            }
+            var barHeight = 0;
             for (var i = 0; i < data.datasets.length; i++) {
 
                 for (var j = 0; j < data.datasets[i].data.length; j++) {
-                    var barOffset = yAxisPosX + config.barValueSpacing + valueHop * j + barWidth * i + config.barDatasetSpacing * i + config.barStrokeWidth * i;
-                    
+                    barHeight = animPc*calculateOffset(data.datasets[i].data[j],calculatedScale,scaleHop);
+                    barOffset = yAxisPosX + config.barValueSpacing + valueHop*j + config.scaleGridLineWidth;
+                    if(!config.stacked){
+                        barOffset += barWidth*i + config.barDatasetSpacing*i + config.barStrokeWidth*i;
+                    }
                     //Added a check for dataset vs single color bars
                     if (data.datasets[i].fillColor.length == 1)
                         ctx.fillStyle = data.datasets[i].fillColor;
@@ -1383,15 +1391,18 @@ window.Chart = function (context, options) {
                         ctx.strokeStyle = cycleColor(data.datasets[i].strokeColor, j);
 
                     ctx.beginPath();
-                    ctx.moveTo(barOffset, xAxisPosY);
-                    ctx.lineTo(barOffset, xAxisPosY - animPc * calculateOffset(data.datasets[i].data[j], calculatedScale, scaleHop) + (config.barStrokeWidth / 2));
-                    ctx.lineTo(barOffset + barWidth, xAxisPosY - animPc * calculateOffset(data.datasets[i].data[j], calculatedScale, scaleHop) + (config.barStrokeWidth / 2));
-                    ctx.lineTo(barOffset + barWidth, xAxisPosY);
+                    ctx.moveTo(barOffset, xAxisPosY - yOffset[j]);
+                    ctx.lineTo(barOffset, xAxisPosY - yOffset[j] - barHeight + (config.barStrokeWidth/2));
+                    ctx.lineTo(barOffset + barWidth, xAxisPosY - yOffset[j] - barHeight + (config.barStrokeWidth/2));
+                    ctx.lineTo(barOffset + barWidth, xAxisPosY - yOffset[j]);
                     if (config.barShowStroke) {
                         ctx.stroke();
                     }
                     ctx.closePath();
                     ctx.fill();
+                    if(config.stacked){
+                        yOffset[j] += barHeight;
+                    }
 
                     // Added option to display labels above bar
                     if (config.scaleShowValues) {
@@ -1501,7 +1512,12 @@ window.Chart = function (context, options) {
             xAxisLength = width - longestText - widestXLabel;
             valueHop = Math.floor(xAxisLength / (data.labels.length));
 
-            barWidth = (valueHop - config.scaleGridLineWidth * 2 - (config.barValueSpacing * 2) - (config.barDatasetSpacing * data.datasets.length - 1) - ((config.barStrokeWidth / 2) * data.datasets.length - 1)) / data.datasets.length;
+            if(config.stacked){
+               barWidth = valueHop - config.scaleGridLineWidth*2 - (config.barValueSpacing*2);
+            }
+            else{
+               barWidth = (valueHop - config.scaleGridLineWidth*2 - (config.barValueSpacing*2) - (config.barDatasetSpacing*data.datasets.length-1) - ((config.barStrokeWidth/2)*data.datasets.length-1))/data.datasets.length;
+            }
 
             yAxisPosX = width - widestXLabel / 2 - xAxisLength;
             xAxisPosY = scaleHeight + config.scaleFontSize / 2;
@@ -1548,24 +1564,39 @@ window.Chart = function (context, options) {
         function getValueBounds() {
             var upperValue = Number.MIN_VALUE;
             var lowerValue = Number.MAX_VALUE;
-            for (var i = 0; i < data.datasets.length; i++) {
-                for (var j = 0; j < data.datasets[i].data.length; j++) {
-                    if (data.datasets[i].data[j] > upperValue) { upperValue = data.datasets[i].data[j] };
-                    if (data.datasets[i].data[j] < lowerValue) { lowerValue = data.datasets[i].data[j] };
+            if (config.stacked){
+                var sum = new Array();
+                for (var j=0; j<data.labels.length; j++){
+                    sum[j] = 0;
                 }
+                for (var i=0; i<data.datasets.length; i++){
+                    for (var j=0; j<data.datasets[i].data.length; j++){
+                        sum[j] += data.datasets[i].data[j];
+                    }
+                };
+                for (var j=0; j<data.labels.length; j++){
+                    if ( sum[j] > upperValue) { upperValue = sum[j] };
+                    if ( sum[j] < lowerValue) { lowerValue = sum[j] };
+                }
+            }
+            else{
+                for (var i=0; i<data.datasets.length; i++){
+                    for (var j=0; j<data.datasets[i].data.length; j++){
+                        if ( data.datasets[i].data[j] > upperValue) { upperValue = data.datasets[i].data[j] };
+                        if ( data.datasets[i].data[j] < lowerValue) { lowerValue = data.datasets[i].data[j] };
+                    }
+                };
             };
-
-            var maxSteps = Math.floor((scaleHeight / (labelHeight * 0.66)));
-            var minSteps = Math.floor((scaleHeight / labelHeight * 0.5));
-
-            return {
-                maxValue: upperValue,
-                minValue: lowerValue,
-                maxSteps: maxSteps,
-                minSteps: minSteps
+            var maxSteps = Math.floor((scaleHeight / (labelHeight*0.66)));
+            var minSteps = Math.floor((scaleHeight / labelHeight*0.5));
+            
+            var bounds = {
+                maxValue : upperValue,
+                minValue : config.stacked ? 0 : lowerValue,
+                maxSteps : maxSteps,
+                minSteps : minSteps
             };
-
-
+            return bounds;
         }
     }
 
